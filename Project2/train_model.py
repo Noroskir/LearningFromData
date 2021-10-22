@@ -15,8 +15,6 @@ parser.add_argument('-q', '--quiet', action='store_true')
 
 
 args = parser.parse_args()
-batchsize = int(args.batchsize)
-epochs = int(args.epochs)
 
 conf = config.Config(args.file)
 conf_args = conf.parse_config_args()
