@@ -10,9 +10,7 @@ import config
 
 parser = argparse.ArgumentParser(description='3-Body Newton Neural Net')
 parser.add_argument('-o', '--output')  # the name to which the model gets saved
-parser.add_argument('-e', '--epochs')  # number of epochs to train the model
 parser.add_argument('-f', '--file')  # file for the hyperparameters
-parser.add_argument('-b', '--batchsize')
 parser.add_argument('-q', '--quiet', action='store_true')
 
 
@@ -28,6 +26,8 @@ eta = conf_args['eta']
 beta1 = conf_args['beta1']
 beta2 = conf_args['beta2']
 lambda_energy = conf_args['lambda']
+epochs = conf_args['epochs']
+batchsize = conf_args['batchsize']
 
 
 if not args.quiet:
