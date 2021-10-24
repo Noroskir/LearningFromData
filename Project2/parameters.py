@@ -2,15 +2,13 @@ import numpy as np
 
 # eta, beta1, beta2
 
-eta_range = np.logspace(np.log10(0.0001), np.log10(0.1), 500)
-beta1_range = np.logspace(np.log10(0.1), np.log10(0.999), 500)
-beta2_range = np.logspace(np.log10(0.9), np.log10(0.9999), 500)
+eta_range = np.logspace(np.log10(0.00001), np.log10(0.01), 500)
+beta1_range = 1/np.logspace(np.log10(1/0.9999), np.log10(1/0.3), 500)
+beta2_range = 1/np.logspace(np.log10(1/0.9999), np.log10(1/0.9), 500)
 
 etas = np.random.choice(eta_range, size=10)
 beta1s = np.random.choice(beta1_range, size=10)
 beta2s = np.random.choice(beta2_range, size=10)
-
-print(etas)
 
 
 def write_config_files(etas, beta1s, beta2s, folder):
