@@ -4,7 +4,7 @@ import numpy as np
 
 eta_range = np.logspace(np.log10(0.0001), np.log10(0.1), 500)
 beta1_range = np.logspace(np.log10(0.1), np.log10(0.999), 500)
-beta2_range = np.logspace(np.log10(0.1), np.log10(0.9999), 500)
+beta2_range = np.logspace(np.log10(0.9), np.log10(0.9999), 500)
 
 etas = np.random.choice(eta_range, size=10)
 beta1s = np.random.choice(beta1_range, size=10)
