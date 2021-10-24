@@ -9,7 +9,7 @@ import config
 
 
 parser = argparse.ArgumentParser(description='3-Body Newton Neural Net')
-parser.add_argument('-o', '--output')  # the name to which the model gets saved
+parser.add_argument('-o', '--output')  # the dir to which the model gets saved
 parser.add_argument('-f', '--file')  # file for the hyperparameters
 parser.add_argument('-q', '--quiet', action='store_true')
 
@@ -26,6 +26,12 @@ beta2 = conf_args['beta2']
 lambda_energy = conf_args['lambda']
 epochs = conf_args['epochs']
 batchsize = conf_args['batchsize']
+loss = conf_args['loss_function']
+
+if loss == "MAE":
+    loss_func = tf.keras.losses.MeanAbsoluteError()
+if loss == "custom":
+    loss_func = custom_loss
 
 
 if not args.quiet:
@@ -72,7 +78,7 @@ model = tf.keras.Sequential([
 
 
 model.compile(optimizer=keras.optimizers.Adam(eta, beta1, beta2),
-              loss=custom_loss,
+              loss=loss_func,
               metrics=['accuracy'])
 
 hist = model.fit(train_dataset, epochs=epochs,

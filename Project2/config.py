@@ -6,7 +6,8 @@ class Config:
         self.filename = filename
         self.args = {'eta': float, 'beta1': float,
                      'beta2': float, 'lambda': float,
-                     'epochs': int, 'batchsize': int}
+                     'epochs': int, 'batchsize': int,
+                     'loss_function': str}
 
     def parse_config_args(self):
         vals = dict()
