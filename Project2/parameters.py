@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
 
 # eta, beta1, beta2
 
