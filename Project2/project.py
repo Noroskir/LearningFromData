@@ -3,6 +3,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 import matplotlib.pyplot as plt
+import os
 
 # Some global data
 global data
@@ -94,25 +95,38 @@ def plot_trajectories(p1, p2, p3, ax=None, **kwargs):
     if ax == None:
         fig, ax = plt.subplots(1, 1)
 
-    ax.plot(p1[0], p1[1], color='green')
-    ax.plot(p2[0], p2[1], color='blue')
-    ax.plot(p3[0], p3[1], color='red')
+    ax.plot(p1[0], p1[1], color='green', **kwargs)
+    ax.plot(p2[0], p2[1], color='blue', **kwargs)
+    ax.plot(p3[0], p3[1], color='red', **kwargs)
     return ax
 
 
-def plot_index(idx, data, ax=None):
+def plot_index(idx, data, ax=None, **kwargs):
     """"""
     if ax == None:
         fig, ax = plt.subplots(1, 1)
     x, y = get_data(idx, data)
     p1, p2, p3 = get_trajectories(y)
-    ax = plot_trajectories(p1, p2, p3, ax=ax)
+    ax = plot_trajectories(p1, p2, p3, ax=ax, **kwargs)
+    return ax
+
+
+def plot_history(hist, ax=None, **kwargs):
+    """"""
+    if ax == None:
+        fig, ax = plt.subplots(1, 1)
+    epochs = np.arange(1, len(hist)+1)
+    loss = hist[:, 2]
+    ax.semilogy(epochs, loss, **kwargs)
+    ax.set_ylabel(r"MAE")
+    ax.set_xlabel(r"Epoch")
+    ax.legend()
     return ax
 
 
 def save_model(model, name):
     """Save the model weights to a .h5 file and the history (loss and accuracy)
-    to a txt file.
+    to a txt file. If a file already exists, then just append to it. 
     Args:
         model (keras.model): A keras model
         name (string): The name of the model, has no ending. (no .h5 or .txt)
@@ -126,7 +140,24 @@ def save_model(model, name):
     data = np.zeros((epochs, len(keys)))
     for i in range(len(keys)):
         data[:, i] = hist.history[keys[i]]
+    fname = name + '.txt'
+    if os.path.exists(fname):  # append to existing file
+        prev_data = np.loadtxt(fname)
+        data = np.append(prev_data, data, axis=0)
     np.savetxt(name + '.txt', data, header=header)
+
+
+def load_model(name):
+    """Load the model weights from a .h5 file and the history from a .txt file.
+    Args:
+        name (string): name of the files.
+    Returns:
+        model (keras.model): the model with the weights
+        hist np.array: (loss, acc, test_loss, test_acc)the loss and accuracy 
+                        as functions of the epoch."""
+    model = tf.keras.models.load_model(name+'.h5')
+    hist = np.loadtxt(name+'.txt')
+    return model, hist
 
 
 # ==================================================

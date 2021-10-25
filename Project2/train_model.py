@@ -56,25 +56,31 @@ test_dataset = tf.data.Dataset.from_tensor_slices((X_all[split:].reshape((-1, 3)
                                                    Y_all[split:].reshape((-1, 4))))
 test_dataset = test_dataset.batch(batchsize)
 
+# ==================================================
+# check if pretrained model exists
+# ==================================================
 
-model = tf.keras.Sequential([
-    tf.keras.layers.InputLayer(3),
-    tf.keras.layers.Dense(
-        128, activation=tf.keras.layers.LeakyReLU(alpha=0.1)),  # 1
-    tf.keras.layers.Dense(128, activation='relu'),  # 2
-    tf.keras.layers.Dense(
-        128, activation=tf.keras.layers.LeakyReLU(alpha=0.1)),  # 3
-    tf.keras.layers.Dense(128, activation='relu'),  # 4
-    tf.keras.layers.Dense(
-        128, activation=tf.keras.layers.LeakyReLU(alpha=0.1)),  # 5
-    tf.keras.layers.Dense(128, activation='relu'),  # 6
-    tf.keras.layers.Dense(
-        128, activation=tf.keras.layers.LeakyReLU(alpha=0.1)),  # 7
-    tf.keras.layers.Dense(128, activation='relu'),  # 8
-    tf.keras.layers.Dense(
-        128, activation=tf.keras.layers.LeakyReLU(alpha=0.1)),  # 9
-    tf.keras.layers.Dense(128, activation='relu'),  # 10
-    tf.keras.layers.Dense(4, activation='linear')])
+if os.path.exists(args.output + '.h5'):
+    model = keras.models.load_model(args.output + '.h5')
+else:
+    model = tf.keras.Sequential([
+        tf.keras.layers.InputLayer(3),
+        tf.keras.layers.Dense(
+            128, activation=tf.keras.layers.LeakyReLU(alpha=0.1)),  # 1
+        tf.keras.layers.Dense(128, activation='relu'),  # 2
+        tf.keras.layers.Dense(
+            128, activation=tf.keras.layers.LeakyReLU(alpha=0.1)),  # 3
+        tf.keras.layers.Dense(128, activation='relu'),  # 4
+        tf.keras.layers.Dense(
+            128, activation=tf.keras.layers.LeakyReLU(alpha=0.1)),  # 5
+        tf.keras.layers.Dense(128, activation='relu'),  # 6
+        tf.keras.layers.Dense(
+            128, activation=tf.keras.layers.LeakyReLU(alpha=0.1)),  # 7
+        tf.keras.layers.Dense(128, activation='relu'),  # 8
+        tf.keras.layers.Dense(
+            128, activation=tf.keras.layers.LeakyReLU(alpha=0.1)),  # 9
+        tf.keras.layers.Dense(128, activation='relu'),  # 10
+        tf.keras.layers.Dense(4, activation='linear')])
 
 
 model.compile(optimizer=keras.optimizers.Adam(eta, beta1, beta2),
