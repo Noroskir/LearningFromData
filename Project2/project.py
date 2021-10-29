@@ -10,11 +10,13 @@ global data
 global X_all
 global Y_all
 global tlist
+global lambda_energy
 
-
+lambda_energy = 0.001
 # ==================================================
 # Helper functions
 # ==================================================
+
 
 def get_data(idx, data):
     """
@@ -95,9 +97,12 @@ def plot_trajectories(p1, p2, p3, ax=None, **kwargs):
     if ax == None:
         fig, ax = plt.subplots(1, 1)
 
+    ax.plot(p1[0][0], p1[1][0], 'o', color='green', markersize=5, **kwargs)
     ax.plot(p1[0], p1[1], color='green', **kwargs)
     ax.plot(p2[0], p2[1], color='blue', **kwargs)
+    ax.plot(p2[0][0], p2[1][0], 'o', color='blue', markersize=5, **kwargs)
     ax.plot(p3[0], p3[1], color='red', **kwargs)
+    ax.plot(p3[0][0], p3[1][0], 'o', color='red', markersize=5, **kwargs)
     return ax
 
 
@@ -122,42 +127,6 @@ def plot_history(hist, ax=None, **kwargs):
     ax.set_xlabel(r"Epoch")
     ax.legend()
     return ax
-
-
-def save_model(model, name):
-    """Save the model weights to a .h5 file and the history (loss and accuracy)
-    to a txt file. If a file already exists, then just append to it. 
-    Args:
-        model (keras.model): A keras model
-        name (string): The name of the model, has no ending. (no .h5 or .txt)
-    Returns:
-        None."""
-    model.save(name + '.h5')
-    hist = model.history
-    keys = [*hist.history.keys()]
-    epochs = len(hist.history[keys[0]])
-    header = ', '.join(keys)
-    data = np.zeros((epochs, len(keys)))
-    for i in range(len(keys)):
-        data[:, i] = hist.history[keys[i]]
-    fname = name + '.txt'
-    if os.path.exists(fname):  # append to existing file
-        prev_data = np.loadtxt(fname)
-        data = np.append(prev_data, data, axis=0)
-    np.savetxt(name + '.txt', data, header=header)
-
-
-def load_model(name):
-    """Load the model weights from a .h5 file and the history from a .txt file.
-    Args:
-        name (string): name of the files.
-    Returns:
-        model (keras.model): the model with the weights
-        hist np.array: (loss, acc, test_loss, test_acc)the loss and accuracy 
-                        as functions of the epoch."""
-    model = tf.keras.models.load_model(name+'.h5')
-    hist = np.loadtxt(name+'.txt')
-    return model, hist
 
 
 # ==================================================
@@ -267,6 +236,41 @@ def tf_compute_potential_energy(p1, p2, p3):
     return tf.reshape(pe, (-1, 1))
 
 
+def energy_error(y, y_pred):
+    """Return the mean relative energy error"""
+    predicted_positions1 = y_pred[:, 0:2]
+    predicted_positions2 = y_pred[:, 2:4]
+    predicted_positions3 = -y_pred[:, 0:2] - y_pred[:, 2:4]
+
+    predicted_velocities1 = tf_compute_velocities(tlist, predicted_positions1)
+    predicted_velocities2 = tf_compute_velocities(tlist, predicted_positions2)
+    predicted_velocities3 = tf_compute_velocities(tlist, predicted_positions3)
+
+    initial_potential_energy = -1/tf.sqrt((predicted_positions1[0, 0] - predicted_positions2[0, 0])**2 + (
+        predicted_positions1[0, 1] - predicted_positions2[0, 1])**2)
+    initial_potential_energy += -1/tf.sqrt((predicted_positions1[0, 0] - predicted_positions3[0, 0])**2 + (
+        predicted_positions1[0, 1] - predicted_positions3[0, 1])**2)
+    initial_potential_energy += -1/tf.sqrt((predicted_positions3[0, 0] - predicted_positions2[0, 0])**2 + (
+        predicted_positions3[0, 1] - predicted_positions2[0, 1])**2)
+
+    ke_predicted_trajectory = tf_compute_kinetic_energy(predicted_velocities1)
+    ke_predicted_trajectory += tf_compute_kinetic_energy(predicted_velocities2)
+    ke_predicted_trajectory += tf_compute_kinetic_energy(predicted_velocities3)
+
+    # only compute the potential energy from second step, the first one is always 0
+    pe_predicted_trajectory = tf_compute_potential_energy(predicted_positions1[1:],
+                                                          predicted_positions2[1:],
+                                                          predicted_positions3[1:])
+
+    initial_potential_energy = tf.cast(initial_potential_energy, tf.float32)
+    error = ke_predicted_trajectory + pe_predicted_trajectory - initial_potential_energy
+
+    relative_energy_error = tf.abs(error / initial_potential_energy)
+
+    # The relative weight ofthe two terms in the custom loss might be tuned.
+    return relative_energy_error.numpy()
+
+
 @tf.function()
 def custom_loss(y, y_pred):
     """
@@ -305,7 +309,48 @@ def custom_loss(y, y_pred):
     error = ke_predicted_trajectory + pe_predicted_trajectory - initial_potential_energy
 
     error = tf.clip_by_value(error, -1e6, 1e6),
-    energy_loss = tf.reduce_mean(tf.abs(error))
+    #energy_loss = tf.reduce_mean(tf.abs(error))
+    energy_loss = tf.reduce_sum(tf.abs(error))
 
     # The relative weight ofthe two terms in the custom loss might be tuned.
-    return tf.keras.losses.MeanAbsoluteError()(y, y_pred) + 0.001*energy_loss
+    return tf.keras.losses.MeanAbsoluteError()(y, y_pred) + lambda_energy*energy_loss
+
+
+def save_model(model, name):
+    """Save the model weights to a .h5 file and the history (loss and accuracy)
+    to a txt file. If a file already exists, then just append to it. 
+    Args:
+        model (keras.model): A keras model
+        name (string): The name of the model, has no ending. (no .h5 or .txt)
+    Returns:
+        None."""
+    model.save(name + '.h5')
+    hist = model.history
+    keys = [*hist.history.keys()]
+    epochs = len(hist.history[keys[0]])
+    header = ', '.join(keys)
+    data = np.zeros((epochs, len(keys)))
+    for i in range(len(keys)):
+        data[:, i] = hist.history[keys[i]]
+    fname = name + '.txt'
+    if os.path.exists(fname):  # append to existing file
+        prev_data = np.loadtxt(fname)
+        data = np.append(prev_data, data, axis=0)
+    np.savetxt(name + '.txt', data, header=header)
+
+
+def load_model(name, custom_objects=None):
+    """Load the model weights from a .h5 file and the history from a .txt file.
+    Args:
+        name (string): name of the files.
+    Returns:
+        model (keras.model): the model with the weights
+        hist np.array: (loss, acc, test_loss, test_acc)the loss and accuracy 
+                        as functions of the epoch."""
+    if custom_objects != None:
+        model = tf.keras.models.load_model(
+            name+'.h5', custom_objects=custom_objects)
+    else:
+        model = tf.keras.models.load_model(name+'.h5')
+    hist = np.loadtxt(name+'.txt')
+    return model, hist

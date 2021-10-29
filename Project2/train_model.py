@@ -7,6 +7,8 @@ from project import *
 
 import config
 
+global lambda_energy
+
 
 parser = argparse.ArgumentParser(description='3-Body Newton Neural Net')
 parser.add_argument('-o', '--output')  # the dir to which the model gets saved
@@ -18,7 +20,6 @@ args = parser.parse_args()
 
 conf = config.Config(args.file)
 conf_args = conf.parse_config_args()
-print(conf_args)
 
 eta = conf_args['eta']
 beta1 = conf_args['beta1']
@@ -57,28 +58,27 @@ test_dataset = tf.data.Dataset.from_tensor_slices((X_all[split:].reshape((-1, 3)
 test_dataset = test_dataset.batch(batchsize)
 
 # ==================================================
-# check if pretrained model exists
+# check if pretrained model exists or create model
 # ==================================================
 
 if os.path.exists(args.output + '.h5'):
-    model = keras.models.load_model(args.output + '.h5')
+    if loss == 'custom':
+        model = keras.models.load_model(args.output + '.h5',
+                                        custom_objects={'custom_loss': custom_loss})
+    else:
+        model = keras.models.load_model(args.output + '.h5')
 else:
     model = tf.keras.Sequential([
         tf.keras.layers.InputLayer(3),
-        tf.keras.layers.Dense(
-            128, activation=tf.keras.layers.LeakyReLU(alpha=0.1)),  # 1
+        tf.keras.layers.Dense(128, activation='relu'),  # 1
         tf.keras.layers.Dense(128, activation='relu'),  # 2
-        tf.keras.layers.Dense(
-            128, activation=tf.keras.layers.LeakyReLU(alpha=0.1)),  # 3
+        tf.keras.layers.Dense(128, activation='relu'),  # 3
         tf.keras.layers.Dense(128, activation='relu'),  # 4
-        tf.keras.layers.Dense(
-            128, activation=tf.keras.layers.LeakyReLU(alpha=0.1)),  # 5
+        tf.keras.layers.Dense(128, activation='relu'),  # 5
         tf.keras.layers.Dense(128, activation='relu'),  # 6
-        tf.keras.layers.Dense(
-            128, activation=tf.keras.layers.LeakyReLU(alpha=0.1)),  # 7
+        tf.keras.layers.Dense(128, activation='relu'),  # 7
         tf.keras.layers.Dense(128, activation='relu'),  # 8
-        tf.keras.layers.Dense(
-            128, activation=tf.keras.layers.LeakyReLU(alpha=0.1)),  # 9
+        tf.keras.layers.Dense(128, activation='relu'),  # 9
         tf.keras.layers.Dense(128, activation='relu'),  # 10
         tf.keras.layers.Dense(4, activation='linear')])
 
